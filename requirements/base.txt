@@ -1,4 +1,6 @@
 aiogram==2.22.2
+aiogram-dialog==1.9.0
+aioredis-2.0.1
 fastapi==0.85.2
 pre-commit==2.20.0
 pydantic==1.10.2
