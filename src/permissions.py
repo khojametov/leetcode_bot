@@ -16,5 +16,18 @@ class Permission:
 
         return decorator
 
+    def set_username(self):
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(message: types.Message, *args, **kwargs):
+                if not message.from_user.username:
+                    await message.reply("Please set username")
+                    return
+                return await func(message, *args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
 
 permissions = Permission()

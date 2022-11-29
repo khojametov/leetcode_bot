@@ -1,5 +1,18 @@
 version: '3.8'
 services:
+#  web:
+#    container_name: leetcode-web
+#    build: .
+#    ports:
+#      - "7777:8000"
+#    working_dir: /var/www/app
+#    command: 'uvicorn main:app --host 0.0.0.0 --port 8000 --reload'
+#    volumes:
+#      - ./:/var/www/app
+#    restart: always
+#    depends_on:
+#      - db
+#      - cache
   cache:
     container_name: leetcode-redis
     image: redis:6.2-alpine
