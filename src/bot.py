@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, date
 
-from aiogram import types
+import aioredis
+from aiogram import types, Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -8,13 +10,17 @@ from aiogram.types import ReplyKeyboardMarkup, ParseMode, CallbackQuery
 from sqlalchemy import select
 
 from src.database import db
-from src.main import dp, bot, redis
 from src.markups import markup
 from src.models import User, Link
 from src.permissions import permissions
 
 from src.config import settings
-from src.scripts import create_statistic_for_user
+
+
+bot = Bot(token=settings.api_token)
+dp = Dispatcher(bot, storage=MemoryStorage())
+
+redis = aioredis.from_url("redis://localhost:6369/0", decode_responses=True)
 
 
 class Form(StatesGroup):
@@ -27,6 +33,7 @@ class Form(StatesGroup):
 @permissions.private_chat()
 @permissions.set_username()
 async def start(message: types.Message):
+    print("start")
     await bot.send_message(
         chat_id=message.chat.id,
         text="Hi this is leetcode bot",
@@ -215,10 +222,14 @@ async def join(message: types.ChatJoinRequest):
             )
             db.add(user)
             await db.commit()
+
+            from src.scripts import create_statistic_for_user
+
             await create_statistic_for_user(user, date.today() - timedelta(days=1))
             await create_statistic_for_user(user, date.today())
             await message.approve()
         except Exception as e:
+            print(e)
             db.rollback()
             await bot.send_message(
                 chat_id=chat_id, text="Something went wrong please contact to admins"

@@ -1,28 +1,18 @@
 import asyncio
 
-import aioredis
 import uvicorn
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from fastapi import FastAPI
 from aiogram import types, Dispatcher, Bot
 
-
+from src.scheduler import app_rocketry
 from src.database import db
 from src.config import settings
-from src.scheduler import app as app_rocketry
+from src.bot import bot, dp
 
-
-TOKEN = settings.api_token
-# webhook settings
 WEBHOOK_HOST = settings.webhook_host
-WEBHOOK_PATH = f"/bot/{TOKEN}"
+WEBHOOK_PATH = f"/bot/{settings.api_token}"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
-
-bot = Bot(token=TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
-
-redis = aioredis.from_url("redis://localhost:6369/0", decode_responses=True)
 
 app = FastAPI()
 

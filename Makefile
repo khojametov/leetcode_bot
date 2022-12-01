@@ -1,2 +1,2 @@
 run:
-	uvicorn main:app --reload --port 7777
+	uvicorn src.main:app --reload --port 7777

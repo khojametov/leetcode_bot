@@ -6,8 +6,8 @@ from sqlalchemy.orm import selectinload
 from src.config import settings
 from src.database import db
 from src.crawler import get_solved_problems
-from src.main import bot
 from src.models import User, Statistic
+from src.bot import bot
 
 
 async def create_statistic_for_user(user: User, day: date) -> None:
@@ -60,11 +60,15 @@ async def clean_left_members() -> None:
     result = await db.execute(query)
     users = result.scalars().all()
     for user in users:
-        info = await bot.get_chat_member(
-            chat_id=settings.group_id, user_id=user.chat_id
-        )
-        if info.status != "member":
-            await db.delete(user)
-            await db.commit()
+        try:
+            info = await bot.get_chat_member(
+                chat_id=settings.group_id, user_id=user.chat_id
+            )
+            if info.status != "member":
+                await db.delete(user)
+                await db.commit()
+        except Exception as e:
+            print(e)
+            continue
 
     await db.close()
