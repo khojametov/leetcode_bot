@@ -1,13 +1,32 @@
 import asyncio
+from sqlalchemy import select, func
 
+from database import db
+from src.models import Statistic, User
 from src.scripts import clean_left_members
 
 
 async def test():
-    # await db.init()
+    await db.init()
+    total = func.max(Statistic.easy + Statistic.medium + Statistic.hard).label("total")
+    score = func.max(3 * Statistic.hard + 2 * Statistic.medium + Statistic.easy).label(
+        "score"
+    )
+    query = (
+        select(
+            User,
+            total,
+            score,
+        )
+        .group_by(User.id)
+        .join(Statistic)
+        .order_by(total.desc())
+    )
+    result = await db.execute(query)
+    statistics = result.fetchall()
+    print(statistics)
     # x = await top_solved()
     # print(x)
-    await clean_left_members()
 
 
 loop = asyncio.get_event_loop()

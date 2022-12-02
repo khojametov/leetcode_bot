@@ -7,11 +7,12 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, ParseMode, CallbackQuery
-from sqlalchemy import select
+from prettytable import PrettyTable
+from sqlalchemy import select, func
 
 from src.database import db
 from src.markups import markup
-from src.models import User, Link
+from src.models import User, Link, Statistic
 from src.permissions import permissions
 
 from src.config import settings
@@ -20,7 +21,7 @@ from src.config import settings
 bot = Bot(token=settings.api_token)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-redis = aioredis.from_url("redis://localhost:6369/0", decode_responses=True)
+redis = aioredis.from_url(settings.redis_url, decode_responses=True)
 
 
 class Form(StatesGroup):
@@ -33,7 +34,6 @@ class Form(StatesGroup):
 @permissions.private_chat()
 @permissions.set_username()
 async def start(message: types.Message):
-    print("start")
     await bot.send_message(
         chat_id=message.chat.id,
         text="Hi this is leetcode bot",
@@ -46,7 +46,6 @@ async def start(message: types.Message):
 @permissions.set_username()
 async def register(message: types.Message):
     await Form.full_name.set()
-
     await message.reply("What is your full name?")
 
 
@@ -78,6 +77,38 @@ async def my_profile(message: types.Message):
 @permissions.private_chat()
 async def contact_to_admins(message: types.Message):
     await bot.send_message(chat_id=message.chat.id, text="@dilshodbek_xojametov")
+
+
+@dp.message_handler(Text(equals=markup.rating))
+@permissions.private_chat()
+async def rating(message: types.Message):
+    total = func.max(Statistic.easy + Statistic.medium + Statistic.hard).label("total")
+    score = func.max(3 * Statistic.hard + 2 * Statistic.medium + Statistic.easy).label(
+        "score"
+    )
+    query = (
+        select(
+            User,
+            total,
+            score,
+        )
+        .group_by(User.id)
+        .join(Statistic)
+        .order_by(total.desc())
+    )
+    result = await db.execute(query)
+    statistics = result.fetchall()
+    fields = ["#", "username", "solved", "score"]
+    table = PrettyTable(fields)
+    values = []
+    for i, statistic in enumerate(statistics):
+        values.append(
+            [i + 1, statistic[0].telegram_username, statistic[1], statistic[2]]
+        )
+    table.add_rows(values)
+    await bot.send_message(
+        chat_id=message.chat.id, text=f"```{table}```", parse_mode=ParseMode.MARKDOWN
+    )
 
 
 @dp.message_handler(Text(equals=markup.back))
@@ -238,6 +269,7 @@ async def join(message: types.ChatJoinRequest):
         await message.decline()
 
 
+@dp.message_handler(commands=[""])
 @dp.message_handler(commands=["test"])
 async def test(message: types.Message):
     # query = select(User)
@@ -245,6 +277,6 @@ async def test(message: types.Message):
     # x = u.scalars().first()
     # await get_solved_problems("dilshodbek_xojametov")
     # await bot.send_message(message.chat.id, "x")
-
-    x = await bot.get_chat_members_count(chat_id=settings.group_id)
-    print()
+    query = select(Statistic.date, func.count(Statistic.id)).group_by(Statistic.date)
+    result = await db.execute(query)
+    print(result.scalars().all())

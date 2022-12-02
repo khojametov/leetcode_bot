@@ -1,5 +1,3 @@
-from aiogram import Bot, Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import find_dotenv
 from typing import List
 
@@ -20,6 +18,7 @@ class Settings(BaseSettings):
     db_port: str
 
     DATABASE_URL: str
+    redis_url: str
 
     # Scheduler
     time_create_statistics: str

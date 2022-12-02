@@ -11,12 +11,14 @@ class Markups:
     my_profile = "My profile"
     admins = "Contact to admins"
     back = "Back to main menu"
+    rating = "Rating"
 
     def main_menu(self):
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(self.register)
         markup.add(self.my_profile)
         markup.add(self.admins)
+        markup.add(self.rating)
         return markup
 
     def back_to_main_menu(self):
