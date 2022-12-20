@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     webhook_host: str
     admins: List[str]
 
+    host: str
+    port: int
+
     # Database
     db_name: str
     db_user: str
