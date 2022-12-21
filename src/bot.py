@@ -167,7 +167,7 @@ async def confirm_data(message: types.Message, state: FSMContext):
             )
 
         await bot.send_message(
-            chat_id=settings.admin_group_id,
+            chat_id=settings.admins_group_id,
             text="Chat id: {}\nUsername: @{}\nFull name: {}\nLeetcode profile: {}".format(
                 message.chat.id,
                 message.chat.username,
