@@ -199,7 +199,7 @@ async def callback_inline(call: CallbackQuery):
                 Link.chat_id == chat_id, Link.expire_date > datetime.now()
             )
             link = await db.execute(query)
-            link = link.scalars().first()
+            link = link.fetch()
             if not link:
                 link = await bot.create_chat_invite_link(
                     chat_id=settings.group_id,
