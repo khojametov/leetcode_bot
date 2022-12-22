@@ -269,9 +269,8 @@ async def join(message: types.ChatJoinRequest):
         await message.decline()
 
 
-# @dp.message_handler(commands=["test"])
-# async def test(message: types.Message):
-#
-#     query = select(Statistic.date, func.count(Statistic.id)).group_by(Statistic.date)
-#     result = await db.execute(query)
-#     print(result.scalars().all())
+@dp.message_handler(commands=["test"])
+async def test(message: types.Message):
+    query = select(Statistic.date, func.count(Statistic.id)).group_by(Statistic.date)
+    result = await db.execute(query)
+    print(result.scalars().all())
