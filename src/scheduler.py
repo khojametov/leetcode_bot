@@ -7,9 +7,9 @@ from src.scripts import create_statistics, top_solved, clean_left_members
 app_rocketry = Rocketry(config={"task_execution": "async"})
 
 
-@app_rocketry.task(every("60 seconds"))
-async def repeat():
-    print("Hello World")
+# @app_rocketry.task(every("60 seconds"))
+# async def repeat():
+#     print("Hello World")
 
 
 @app_rocketry.task(daily.at(settings.time_create_statistics))
