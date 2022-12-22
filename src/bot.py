@@ -198,8 +198,8 @@ async def callback_inline(call: CallbackQuery):
             query = select(Link).filter(
                 Link.chat_id == chat_id, Link.expire_date > datetime.now()
             )
-            link = await db.execute(query)
-            link = link.fetch()
+            result = await db.execute(query)
+            link = result.scalars().first()
             if not link:
                 link = await bot.create_chat_invite_link(
                     chat_id=settings.group_id,
@@ -216,7 +216,7 @@ async def callback_inline(call: CallbackQuery):
                 await db.commit()
                 link = link["invite_link"]
             else:
-                link = link.invite_link
+                link = link["invite_link"]
             await bot.send_message(
                 chat_id=chat_id,
                 text=link,
@@ -269,14 +269,9 @@ async def join(message: types.ChatJoinRequest):
         await message.decline()
 
 
-@dp.message_handler(commands=[""])
-@dp.message_handler(commands=["test"])
-async def test(message: types.Message):
-    # query = select(User)
-    # u = await db.execute(query)
-    # x = u.scalars().first()
-    # await get_solved_problems("dilshodbek_xojametov")
-    # await bot.send_message(message.chat.id, "x")
-    query = select(Statistic.date, func.count(Statistic.id)).group_by(Statistic.date)
-    result = await db.execute(query)
-    print(result.scalars().all())
+# @dp.message_handler(commands=["test"])
+# async def test(message: types.Message):
+#
+#     query = select(Statistic.date, func.count(Statistic.id)).group_by(Statistic.date)
+#     result = await db.execute(query)
+#     print(result.scalars().all())
