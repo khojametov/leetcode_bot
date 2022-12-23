@@ -1,12 +1,17 @@
+from datetime import datetime, timedelta
+
 from aiogram import Router, F, types, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardMarkup, CallbackQuery
+from sqlalchemy import select
 
 from bot.keyboards.inline import confirm_button
 from bot.keyboards.reply import main_menu
 from src.bot import redis
 from src.config import settings
+from src.database import db
+from src.models import Link
 
 router = Router()
 
@@ -83,3 +88,54 @@ async def confirm_data(message: types.Message, state: FSMContext, bot: Bot):
         await message.reply("Please, use keyboard")
 
     await state.clear()
+
+
+@router.callback_query(lambda call: True)
+async def callback_inline(call: CallbackQuery, bot: Bot):
+    if str(call.from_user.id) not in settings.admins:
+        return
+
+    if call.message:
+        chat_id = int(call.message.html_text[9:].split("\n")[0])
+        text = "None of the buttons were clicked"
+
+        if call.data == "send":
+            tomorrow = datetime.now() + timedelta(days=1)
+            query = select(Link).filter(
+                Link.chat_id == chat_id, Link.expire_date > datetime.now()
+            )
+            result = await db.execute(query)
+            link = result.scalars().first()
+            if not link:
+                link = await bot.create_chat_invite_link(
+                    chat_id=settings.group_id,
+                    expire_date=tomorrow,
+                    creates_join_request=True,
+                )
+                db.add(
+                    Link(
+                        chat_id=chat_id,
+                        invite_link=link["invite_link"],
+                        expire_date=tomorrow,
+                    )
+                )
+                await db.commit()
+                link = link["invite_link"]
+            else:
+                link = link["invite_link"]
+
+            await call.message.answer(text=link)
+            data = await redis.hgetall(chat_id)
+            if data:
+                data["approved"] = 1
+                await redis.hset(chat_id, mapping=data)
+            text = "✅"
+        elif call.data == "cancel":
+            await call.message.answer(
+                text="Admins declined your request to join the group due to incorrect information",
+            )
+            text = "❌"
+
+        await call.message.delete()
+        message = await call.message.answer(text=text)
+        await message.reply(text)
