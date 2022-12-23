@@ -27,7 +27,7 @@ async def main():
         )
 
     try:
-        if not config.webhook_domain:
+        if not config.webhook_host:
             await bot.delete_webhook()
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
         else:
@@ -35,7 +35,7 @@ async def main():
             aiohttp_logger.setLevel(logging.CRITICAL)
 
             await bot.set_webhook(
-                url=config.webhook_domain + config.webhook_path,
+                url=config.webhook_host,
                 drop_pending_updates=True,
                 allowed_updates=dp.resolve_used_update_types(),
             )
@@ -46,7 +46,7 @@ async def main():
             )
             runner = web.AppRunner(app)
             await runner.setup()
-            site = web.TCPSite(runner, host=config.app_host, port=config.app_port)
+            site = web.TCPSite(runner, host=config.host, port=config.port)
             await site.start()
 
             await asyncio.Event().wait()
