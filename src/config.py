@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     GROUP_ID: str
     ADMINS_GROUP_ID: str
     WEBHOOK_HOST: str
-    ADMIN: str  # telegram username of admin
+    ADMINS: list[str]  # telegram username of admin
 
     HOST: str
     PORT: int
