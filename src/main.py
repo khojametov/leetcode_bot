@@ -9,9 +9,8 @@ from src.database import db
 from src.config import settings
 from src.bot import bot, dp
 
-WEBHOOK_HOST = settings.webhook_host
-WEBHOOK_PATH = f"/bot/{settings.api_token}"
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+WEBHOOK_PATH = f"/bot/{settings.API_TOKEN}"
+WEBHOOK_URL = f"{settings.WEBHOOK_HOST}{WEBHOOK_PATH}"
 
 
 app = FastAPI()
@@ -53,7 +52,7 @@ class Server(uvicorn.Server):
 async def main():
     server = Server(
         config=uvicorn.Config(
-            app, workers=1, loop="asyncio", port=settings.port, host=settings.host
+            app, workers=1, loop="asyncio", port=settings.PORT, host=settings.HOST
         )
     )
 

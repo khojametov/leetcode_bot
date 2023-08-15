@@ -5,29 +5,29 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    api_token: str
-    group_id: str
-    admins_group_id: str
-    webhook_host: str
-    admins: List[str]
+    API_TOKEN: str
+    GROUP_ID: str
+    ADMINS_GROUP_ID: str
+    WEBHOOK_HOST: str
+    ADMIN: str  # telegram username of admin
 
-    host: str
-    port: int
+    HOST: str
+    PORT: int
 
     # Database
-    db_name: str
-    db_user: str
-    db_password: str
-    db_host: str
-    db_port: str
+    DB_NAME: str
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: str
 
     DATABASE_URL: str
-    redis_url: str
+    REDIS_URL: str
 
     # Scheduler
-    time_create_statistics: str
-    time_top_solved: str
-    time_clean_left_members: str
+    TIME_CREATE_STATISTICS: str
+    TIME_TOP_SOLVED: str
+    TIME_CLEAN_LEFT_MEMBERS: str
 
     class Config:
         env_file = find_dotenv(".env")

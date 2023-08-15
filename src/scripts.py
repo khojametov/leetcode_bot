@@ -62,7 +62,7 @@ async def clean_left_members() -> None:
     for user in users:
         try:
             info = await bot.get_chat_member(
-                chat_id=settings.group_id, user_id=user.chat_id
+                chat_id=settings.GROUP_ID, user_id=user.chat_id
             )
             if info.status != "member":
                 await db.delete(user)

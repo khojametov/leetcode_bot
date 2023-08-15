@@ -18,10 +18,10 @@ from src.permissions import permissions
 from src.config import settings
 
 
-bot = Bot(token=settings.api_token)
+bot = Bot(token=settings.API_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
 class Form(StatesGroup):
@@ -167,7 +167,7 @@ async def confirm_data(message: types.Message, state: FSMContext):
             )
 
         await bot.send_message(
-            chat_id=settings.admins_group_id,
+            chat_id=settings.ADMINS_GROUP_ID,
             text="Chat id: {}\nUsername: @{}\nFull name: {}\nLeetcode profile: {}".format(
                 message.chat.id,
                 message.chat.username,
@@ -187,7 +187,7 @@ async def confirm_data(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(lambda call: True)
 async def callback_inline(call: CallbackQuery):
-    if str(call.from_user.id) not in settings.admins:
+    if str(call.from_user.id) not in settings.ADMINS:
         return
     if call.message:
         chat_id = int(call.message.html_text[9:].split("\n")[0])
@@ -202,7 +202,7 @@ async def callback_inline(call: CallbackQuery):
             link = result.scalars().first()
             if not link:
                 link = await bot.create_chat_invite_link(
-                    chat_id=settings.group_id,
+                    chat_id=settings.GROUP_ID,
                     expire_date=tomorrow,
                     creates_join_request=True,
                 )
