@@ -4,7 +4,7 @@ services:
     container_name: leetcode-redis
     image: redis:6.2-alpine
     ports:
-      - '6369:6379'
+      - ${REDIS_PORT}:6379
   db:
     container_name: leetcode-postgres
     image: postgres:13.3-alpine

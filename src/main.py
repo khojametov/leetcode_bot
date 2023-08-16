@@ -12,17 +12,26 @@ from src.bot import bot, dp
 WEBHOOK_PATH = f"/bot/{settings.API_TOKEN}"
 WEBHOOK_URL = f"{settings.WEBHOOK_HOST}{WEBHOOK_PATH}"
 
-
 app = FastAPI()
+
+commands = [
+    types.BotCommand(command="/start", description="Start the bot"),
+    types.BotCommand(command="/register", description="Register to the bot"),
+    types.BotCommand(command="/my_profile", description="Your profile info"),
+    types.BotCommand(command="/admins", description="Contact to admins"),
+    types.BotCommand(command="/rating", description="Leetcode group rating"),
+]
 
 
 @app.on_event("startup")
 async def on_startup():
     webhook_info = await bot.get_webhook_info()
     await db.init()
+    print(webhook_info.url)
     if webhook_info.url != WEBHOOK_URL:
         await bot.set_webhook(url=WEBHOOK_URL)
         print("Webhook set to ", WEBHOOK_URL)
+    await bot.set_my_commands(commands)
 
 
 @app.on_event("shutdown")

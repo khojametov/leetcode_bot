@@ -1,5 +1,4 @@
 from dotenv import find_dotenv
-from typing import List
 
 from pydantic import BaseSettings
 

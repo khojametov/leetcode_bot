@@ -34,7 +34,7 @@ async def create_statistics() -> None:
     users = await db.execute(query)
     users = users.scalars().all()
     for user in users:
-        await create_statistic_for_user(user, date(2022, 11, 24))
+        await create_statistic_for_user(user, date.today())
 
 
 async def top_solved() -> str:

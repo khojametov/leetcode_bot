@@ -4,14 +4,13 @@ import aioredis
 from aiogram import types, Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, ParseMode, CallbackQuery
 from prettytable import PrettyTable
 from sqlalchemy import select, func
 
+from src.helpers import confirm_button
 from src.database import db
-from src.markups import markup
 from src.models import User, Link, Statistic
 from src.permissions import permissions
 
@@ -37,11 +36,10 @@ async def start(message: types.Message):
     await bot.send_message(
         chat_id=message.chat.id,
         text="Hi this is leetcode bot",
-        reply_markup=markup.main_menu(),
     )
 
 
-@dp.message_handler(Text(equals=markup.register))
+@dp.message_handler(commands="register")
 @permissions.private_chat()
 @permissions.set_username()
 async def register(message: types.Message):
@@ -49,7 +47,7 @@ async def register(message: types.Message):
     await message.reply("What is your full name?")
 
 
-@dp.message_handler(Text(equals=markup.my_profile))
+@dp.message_handler(commands="my_profile")
 @permissions.private_chat()
 async def my_profile(message: types.Message):
     query = select(User).filter(User.chat_id == message.chat.id)
@@ -73,13 +71,13 @@ async def my_profile(message: types.Message):
     await bot.send_message(message.chat.id, text=profile_info)
 
 
-@dp.message_handler(Text(equals=markup.admins))
+@dp.message_handler(commands="admins")
 @permissions.private_chat()
 async def contact_to_admins(message: types.Message):
     await bot.send_message(chat_id=message.chat.id, text="@dilshodbek_xojametov")
 
 
-@dp.message_handler(Text(equals=markup.rating))
+@dp.message_handler(commands="rating")
 @permissions.private_chat()
 async def rating(message: types.Message):
     total = func.max(Statistic.easy + Statistic.medium + Statistic.hard).label("total")
@@ -108,14 +106,6 @@ async def rating(message: types.Message):
     table.add_rows(values)
     await bot.send_message(
         chat_id=message.chat.id, text=f"```{table}```", parse_mode=ParseMode.MARKDOWN
-    )
-
-
-@dp.message_handler(Text(equals=markup.back))
-@permissions.private_chat()
-async def back_to_main_menu(message: types.Message):
-    await bot.send_message(
-        chat_id=message.chat.id, text="back to menu", reply_markup=markup.main_menu()
     )
 
 
@@ -174,11 +164,11 @@ async def confirm_data(message: types.Message, state: FSMContext):
                 data["full_name"],
                 "https://leetcode.com/" + data["leetcode_profile"],
             ),
-            reply_markup=markup.confirm_button(),
+            reply_markup=confirm_button(),
         )
-        await message.reply("Thanks for registration", reply_markup=markup.main_menu())
+        await message.reply("Thanks for registration")
     elif message.text == "Cancel":
-        await message.reply("Registration cancelled", reply_markup=markup.main_menu())
+        await message.reply("Registration cancelled")
     else:
         await message.reply("Please, use keyboard")
 
@@ -187,6 +177,7 @@ async def confirm_data(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(lambda call: True)
 async def callback_inline(call: CallbackQuery):
+    print(str(call.from_user.id))
     if str(call.from_user.id) not in settings.ADMINS:
         return
     if call.message:
@@ -267,10 +258,3 @@ async def join(message: types.ChatJoinRequest):
             )
     else:
         await message.decline()
-
-
-@dp.message_handler(commands=["test"])
-async def test(message: types.Message):
-    query = select(Statistic.date, func.count(Statistic.id)).group_by(Statistic.date)
-    result = await db.execute(query)
-    print(result.scalars().all())
