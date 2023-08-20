@@ -1,17 +1,16 @@
 from datetime import datetime, timedelta, date
 
 import aioredis
+import src.crud as crud
 from aiogram import types, Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, ParseMode, CallbackQuery
 from prettytable import PrettyTable
-from sqlalchemy import select, func
 
-from src.helpers import confirm_button
+from src.helpers import confirm_button, ACCEPTED, DECLINED, DECLINE_MESSAGE, NOT_CLICKED, ACCEPT, DECLINE
 from src.database import db
-from src.models import User, Link, Statistic
 from src.permissions import permissions
 
 from src.config import settings
@@ -30,8 +29,8 @@ class Form(StatesGroup):
 
 
 @dp.message_handler(commands="start")
-@permissions.private_chat()
-@permissions.set_username()
+@permissions.private_chat
+@permissions.set_username
 async def start(message: types.Message):
     await bot.send_message(
         chat_id=message.chat.id,
@@ -40,70 +39,48 @@ async def start(message: types.Message):
 
 
 @dp.message_handler(commands="register")
-@permissions.private_chat()
-@permissions.set_username()
+@permissions.private_chat
+@permissions.set_username
 async def register(message: types.Message):
     await Form.full_name.set()
     await message.reply("What is your full name?")
 
 
 @dp.message_handler(commands="my_profile")
-@permissions.private_chat()
+@permissions.private_chat
 async def my_profile(message: types.Message):
-    query = select(User).filter(User.chat_id == message.chat.id)
-    result = await db.execute(query)
-    user = result.scalars().first()
+    user = crud.user.get_by_chat_id(db, message.chat.id)
     if user:
         profile_info = "Chat id: {}\nFull name: {}\nLeetcode profile: {}".format(
             user.chat_id, user.full_name, user.leetcode_profile
         )
     else:
-        redis_data = await redis.hgetall(message.chat.id)
-        if not redis_data:
-            await bot.send_message(
-                message.chat.id,
-                text="You have not registered yet",
-            )
-            return
-        profile_info = "Chat id: {}\nFull name: {}\nLeetcode profile: {}".format(
-            message.chat.id, redis_data["full_name"], redis_data["leetcode_profile"]
-        )
+        profile_info = "You have not registered yet"
     await bot.send_message(message.chat.id, text=profile_info)
 
 
 @dp.message_handler(commands="admins")
-@permissions.private_chat()
+@permissions.private_chat
 async def contact_to_admins(message: types.Message):
-    await bot.send_message(chat_id=message.chat.id, text="@dilshodbek_xojametov")
+    admins_list = ""
+    for admin_info in settings.ADMINS:
+        admins_list += f"{admin_info}\n"
+    await bot.send_message(chat_id=message.chat.id, text=admins_list)
 
 
 @dp.message_handler(commands="rating")
-@permissions.private_chat()
+@permissions.private_chat
 async def rating(message: types.Message):
-    total = func.max(Statistic.easy + Statistic.medium + Statistic.hard).label("total")
-    score = func.max(3 * Statistic.hard + 2 * Statistic.medium + Statistic.easy).label(
-        "score"
-    )
-    query = (
-        select(
-            User,
-            total,
-            score,
-        )
-        .group_by(User.id)
-        .join(Statistic)
-        .order_by(total.desc())
-    )
-    result = await db.execute(query)
-    statistics = result.fetchall()
+    user_ratings = await crud.user.get_rating(db)
     fields = ["#", "username", "solved", "score"]
     table = PrettyTable(fields)
     values = []
-    for i, statistic in enumerate(statistics):
+    for i, user_rating in enumerate(user_ratings):
         values.append(
-            [i + 1, statistic[0].telegram_username, statistic[1], statistic[2]]
+            [i + 1, user_rating.User.telegram_username, user_rating.total, user_rating.score]
         )
     table.add_rows(values)
+    await bot.send_message(chat_id=message.chat.id, text="Score calculation: 3 * hard + 2 * medium + easy")
     await bot.send_message(
         chat_id=message.chat.id, text=f"```{table}```", parse_mode=ParseMode.MARKDOWN
     )
@@ -177,52 +154,44 @@ async def confirm_data(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(lambda call: True)
 async def callback_inline(call: CallbackQuery):
-    print(str(call.from_user.id))
     if str(call.from_user.id) not in settings.ADMINS:
         return
     if call.message:
         chat_id = int(call.message.html_text[9:].split("\n")[0])
-        text = "None of the buttons were clicked"
+        text = NOT_CLICKED
 
-        if call.data == "send":
-            tomorrow = datetime.now() + timedelta(days=1)
-            query = select(Link).filter(
-                Link.chat_id == chat_id, Link.expire_date > datetime.now()
-            )
-            result = await db.execute(query)
-            link = result.scalars().first()
+        if call.data == ACCEPT:
+            link = await crud.link.get_unexpired(db, chat_id)
             if not link:
-                link = await bot.create_chat_invite_link(
+                tomorrow = datetime.now() + timedelta(days=1)
+                telegram_invite_link = (await bot.create_chat_invite_link(
                     chat_id=settings.GROUP_ID,
                     expire_date=tomorrow,
                     creates_join_request=True,
-                )
-                db.add(
-                    Link(
-                        chat_id=chat_id,
-                        invite_link=link["invite_link"],
-                        expire_date=tomorrow,
-                    )
-                )
-                await db.commit()
-                link = link["invite_link"]
-            else:
-                link = link["invite_link"]
+                ))["invite_link"]
+                data = {
+                    "chat_id": chat_id,
+                    "invite_link": telegram_invite_link,
+                    "expire_date": tomorrow,
+                }
+                link = await crud.link.create(db, data)
+
             await bot.send_message(
                 chat_id=chat_id,
-                text=link,
+                text=link.invite_link,
             )
-            data = await redis.hgetall(chat_id)
-            if data:
-                data["approved"] = 1
-                await redis.hset(chat_id, mapping=data)
-            text = "✅"
-        elif call.data == "cancel":
+            redis_data = await redis.hgetall(chat_id)
+            if not redis_data:
+                await bot.send_message(chat_id=chat_id, text="Please register again your data was lost")
+            redis_data["approved"] = 1
+            await redis.hset(chat_id, mapping=redis_data)
+            text = ACCEPTED
+        elif call.data == DECLINE:
             await bot.send_message(
                 chat_id=chat_id,
-                text="Admins declined your request to join the group due to incorrect information",
+                text=DECLINE_MESSAGE
             )
-            text = "❌"
+            text = DECLINED
         await bot.delete_message(call.message.chat.id, call.message.message_id)
         message = await bot.send_message(
             call.message.chat.id, call.message.html_text, parse_mode=ParseMode.HTML
@@ -236,19 +205,19 @@ async def join(message: types.ChatJoinRequest):
     data = await redis.hgetall(chat_id)
     if data and "approved" in data and data["approved"] == "1":
         try:
-            user = User(
-                chat_id=chat_id,
-                telegram_username=data["username"],
-                leetcode_profile=data["leetcode_profile"],
-                full_name=data["full_name"],
-            )
-            db.add(user)
-            await db.commit()
+            data = {
+                "chat_id": chat_id,
+                "telegram_username": data["username"],
+                "leetcode_profile": data["leetcode_profile"],
+                "full_name": data["full_name"],
+            }
+            user = await crud.user.create(db, data, commit=False)
 
             from src.scripts import create_statistic_for_user
-
             await create_statistic_for_user(user, date.today() - timedelta(days=1))
             await create_statistic_for_user(user, date.today())
+
+            await db.commit()
             await message.approve()
         except Exception as e:
             print(e)

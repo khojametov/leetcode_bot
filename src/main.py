@@ -4,6 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from aiogram import types, Dispatcher, Bot
 
+from src.scripts import create_statistics
 from src.scheduler import app_rocketry
 from src.database import db
 from src.config import settings
@@ -27,6 +28,7 @@ commands = [
 async def on_startup():
     webhook_info = await bot.get_webhook_info()
     await db.init()
+    await create_statistics()
     print(webhook_info.url)
     if webhook_info.url != WEBHOOK_URL:
         await bot.set_webhook(url=WEBHOOK_URL)
@@ -66,9 +68,8 @@ async def main():
     )
 
     api = asyncio.create_task(server.serve())
-    sched = asyncio.create_task(app_rocketry.serve())
-
-    await asyncio.wait([api, sched])
+    scheduler = asyncio.create_task(app_rocketry.serve())
+    await asyncio.wait([api, scheduler])
 
 
 if __name__ == "__main__":

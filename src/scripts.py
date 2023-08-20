@@ -1,50 +1,43 @@
 from datetime import date
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
+import src.crud as crud
 from src.config import settings
 from src.database import db
 from src.crawler import get_solved_problems
-from src.models import User, Statistic
+from src.models import User
 from src.bot import bot
 
 
 async def create_statistic_for_user(user: User, day: date) -> None:
     easy, medium, hard = await get_solved_problems(user.leetcode_profile)
-    query = select(Statistic).filter(
-        Statistic.user_id == user.id, Statistic.date == day
-    )
-    result = await db.execute(query)
-    statistic = result.scalars().first()
+    statistic = await crud.statistic.get_statistic_by_date(db, user.id, day)
     if statistic:
         statistic.hard = hard
         statistic.medium = medium
         statistic.easy = easy
     else:
-        statistic = Statistic(
-            user_id=user.id, easy=easy, medium=medium, hard=hard, date=day
-        )
-        db.add(statistic)
-    await db.commit()
+        data = {
+            "user_id": user.id,
+            "easy": easy,
+            "medium": medium,
+            "hard": hard,
+            "date": day,
+        }
+        await crud.statistic.create(db, data)
 
 
 async def create_statistics() -> None:
-    query = select(User)
-    users = await db.execute(query)
-    users = users.scalars().all()
+    users = await crud.user.list(db)
     for user in users:
         await create_statistic_for_user(user, date.today())
 
 
 async def top_solved() -> str:
-    query = select(User).options(selectinload(User.statistics))
-    result = await db.execute(query)
-    users = result.scalars().all()
+    users = crud.user.get_with_statistics(db)
 
     solved_for_today = [user.get_solved() for user in users]
     sorted_by_total = sorted(
-        solved_for_today, key=lambda x: (x[1], x[2], x[3], x[4]), reverse=True
+        solved_for_today, key=lambda x: (x["total"], x["hard"], x["medium"], x["easy"]), reverse=True
     )
     message = "Top solved for today\n\nsolved  username\n"
     for i in range(10):
@@ -55,10 +48,7 @@ async def top_solved() -> str:
 
 
 async def clean_left_members() -> None:
-    await db.init()
-    query = select(User)
-    result = await db.execute(query)
-    users = result.scalars().all()
+    users = crud.user.list(db)
     for user in users:
         try:
             info = await bot.get_chat_member(

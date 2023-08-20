@@ -1,59 +1,59 @@
-from datetime import date
-
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date
-from sqlalchemy.orm import relationship
-
-from src.database import Base
+from datetime import date, datetime
+from sqlmodel import SQLModel, Field, Relationship
 
 
-class User(Base):
+class BaseModel(SQLModel):
+    id: int
+
+
+class User(BaseModel, table=True):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True)
-    chat_id = Column(Integer, unique=True, nullable=False)
-    telegram_username = Column(String, unique=True, nullable=False)
-    leetcode_profile = Column(String, unique=True, nullable=False)
-    full_name = Column(String)
+    id: int = Field(default=None, primary_key=True)
+    chat_id: str = Field(unique=True)
+    telegram_username: str = Field(unique=True)
+    leetcode_profile: str = Field(unique=True)
+    full_name: str
 
-    statistics = relationship("Statistic", order_by="desc(Statistic.date)")
+    statistics: list["Statistic"] = Relationship(back_populates="user")
 
     def __repr__(self):
         return f"{self.leetcode_profile}"
 
     def get_solved(self):
         statistics = self.statistics
-        return (
-            self.telegram_username,
-            statistics[0].total() - statistics[1].total(),
-            statistics[0].hard - statistics[1].hard,
-            statistics[0].medium - statistics[1].medium,
-            statistics[0].total(),
-        )
+        return {
+            "username": self.telegram_username,
+            "total": statistics[0].total() - statistics[1].total(),
+            "hard": statistics[0].hard - statistics[1].hard,
+            "medium": statistics[0].medium - statistics[1].medium,
+            "easy": statistics[0].easy - statistics[1].easy,
+        }
 
 
-class Link(Base):
+class Link(BaseModel, table=True):
     __tablename__ = "links"
 
-    id = Column(Integer, primary_key=True)
-    chat_id = Column(Integer, unique=True, nullable=False)
-    invite_link = Column(String, unique=True, nullable=False)
-    expire_date = Column(DateTime, nullable=False)
+    id: int = Field(default=None, primary_key=True)
+    chat_id: str = Field(unique=True)
+    invite_link: str
+    expire_date: datetime
 
     def __repr__(self):
-        return f"{self.link}"
-
-    __mapper_args__ = {"eager_defaults": True}
+        return f"{self.invite_link}"
 
 
-class Statistic(Base):
+class Statistic(BaseModel, table=True):
     __tablename__ = "statistics"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    hard = Column(Integer, default=0)
-    medium = Column(Integer, default=0)
-    easy = Column(Integer, default=0)
-    date = Column(Date, default=date.today())
+    id: int = Field(default=None, primary_key=True)
+    hard: int
+    medium: int
+    easy: int
+    date: date
+
+    user_id: int = Field(foreign_key="users.id")
+    user: User = Relationship(back_populates="statistics")
 
     def __repr__(self):
         return f"Statistic({self.user_id} - {self.date})"

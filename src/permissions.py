@@ -2,32 +2,28 @@ from aiogram import types
 from functools import wraps
 
 
-class Permission:
-    def private_chat(self):
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(message: types.Message, *args, **kwargs):
-                if message.chat.type != "private":
-                    print("It is not private chat")
-                    return
+class Permissions:
+    @staticmethod
+    def private_chat(func):
+        @wraps(func)
+        async def wrapper(message: types.Message, *args, **kwargs):
+            if message.chat.type == "private":
                 return await func(message, *args, **kwargs)
+            else:
+                print("It is not a private chat")
 
-            return wrapper
+        return wrapper
 
-        return decorator
-
-    def set_username(self):
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(message: types.Message, *args, **kwargs):
-                if not message.from_user.username:
-                    await message.reply("Please set username")
-                    return
+    @staticmethod
+    def set_username(func):
+        @wraps(func)
+        async def wrapper(message: types.Message, *args, **kwargs):
+            if message.from_user.username:
                 return await func(message, *args, **kwargs)
+            else:
+                await message.reply("Please set a username")
 
-            return wrapper
-
-        return decorator
+        return wrapper
 
 
-permissions = Permission()
+permissions = Permissions()

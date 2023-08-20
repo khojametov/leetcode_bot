@@ -11,18 +11,23 @@ class AsyncDatabaseSession:
     def __init__(self):
         self._session = None
         self._engine = None
+        self.database_url = settings.DATABASE_URL
 
     def __getattr__(self, name):
         return getattr(self._session, name)
 
     async def init(self):
         self._engine = create_async_engine(
-            settings.DATABASE_URL, echo=True, future=True
+            self.database_url, echo=True, future=True
         )
 
         self._session = sessionmaker(
             self._engine, expire_on_commit=False, class_=AsyncSession
         )()
+
+    async def execute_query(self, statement):
+        result = await self._session.execute(statement)
+        return result.scalars().all()
 
 
 db = AsyncDatabaseSession()
