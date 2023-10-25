@@ -29,6 +29,3 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = find_dotenv(".env")
-
-
-settings = Settings()

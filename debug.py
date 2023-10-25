@@ -1,9 +1,8 @@
 import asyncio
 from sqlalchemy import select, func
 
-from database import db
+from config.database import db
 from src.models import Statistic, User
-from src.scripts import clean_left_members
 
 
 async def test():

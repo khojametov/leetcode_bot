@@ -5,9 +5,12 @@ env/
 __pycache__/
 migrations/__pycache__/
 migrations/versions/__pycache__/
+
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 .coverage
 .coverage.*
 .DS_Store
+
 .env

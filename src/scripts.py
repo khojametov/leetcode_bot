@@ -2,7 +2,7 @@ from datetime import date
 
 import src.crud as crud
 from src.config import settings
-from src.database import db
+from config.database import db
 from src.crawler import get_solved_problems
 from src.models import User
 from src.bot import bot
@@ -37,7 +37,9 @@ async def top_solved() -> str:
 
     solved_for_today = [user.get_solved() for user in users]
     sorted_by_total = sorted(
-        solved_for_today, key=lambda x: (x["total"], x["hard"], x["medium"], x["easy"]), reverse=True
+        solved_for_today,
+        key=lambda x: (x["total"], x["hard"], x["medium"], x["easy"]),
+        reverse=True,
     )
     message = "Top solved for today\n\nsolved  username\n"
     for i in range(10):

@@ -9,11 +9,19 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, ParseMode, CallbackQuery
 from prettytable import PrettyTable
 
-from src.helpers import confirm_button, ACCEPTED, DECLINED, DECLINE_MESSAGE, NOT_CLICKED, ACCEPT, DECLINE
-from src.database import db
+from src.helpers import (
+    confirm_button,
+    ACCEPTED,
+    DECLINED,
+    DECLINE_MESSAGE,
+    NOT_CLICKED,
+    ACCEPT,
+    DECLINE,
+)
+from config.database import db
 from src.permissions import permissions
 
-from src.config import settings
+from src.config.settings import settings
 
 
 bot = Bot(token=settings.API_TOKEN)
@@ -77,10 +85,17 @@ async def rating(message: types.Message):
     values = []
     for i, user_rating in enumerate(user_ratings):
         values.append(
-            [i + 1, user_rating.User.telegram_username, user_rating.total, user_rating.score]
+            [
+                i + 1,
+                user_rating.User.telegram_username,
+                user_rating.total,
+                user_rating.score,
+            ]
         )
     table.add_rows(values)
-    await bot.send_message(chat_id=message.chat.id, text="Score calculation: 3 * hard + 2 * medium + easy")
+    await bot.send_message(
+        chat_id=message.chat.id, text="Score calculation: 3 * hard + 2 * medium + easy"
+    )
     await bot.send_message(
         chat_id=message.chat.id, text=f"```{table}```", parse_mode=ParseMode.MARKDOWN
     )
@@ -164,11 +179,13 @@ async def callback_inline(call: CallbackQuery):
             link = await crud.link.get_unexpired(db, chat_id)
             if not link:
                 tomorrow = datetime.now() + timedelta(days=1)
-                telegram_invite_link = (await bot.create_chat_invite_link(
-                    chat_id=settings.GROUP_ID,
-                    expire_date=tomorrow,
-                    creates_join_request=True,
-                ))["invite_link"]
+                telegram_invite_link = (
+                    await bot.create_chat_invite_link(
+                        chat_id=settings.GROUP_ID,
+                        expire_date=tomorrow,
+                        creates_join_request=True,
+                    )
+                )["invite_link"]
                 data = {
                     "chat_id": chat_id,
                     "invite_link": telegram_invite_link,
@@ -182,15 +199,14 @@ async def callback_inline(call: CallbackQuery):
             )
             redis_data = await redis.hgetall(chat_id)
             if not redis_data:
-                await bot.send_message(chat_id=chat_id, text="Please register again your data was lost")
+                await bot.send_message(
+                    chat_id=chat_id, text="Please register again your data was lost"
+                )
             redis_data["approved"] = 1
             await redis.hset(chat_id, mapping=redis_data)
             text = ACCEPTED
         elif call.data == DECLINE:
-            await bot.send_message(
-                chat_id=chat_id,
-                text=DECLINE_MESSAGE
-            )
+            await bot.send_message(chat_id=chat_id, text=DECLINE_MESSAGE)
             text = DECLINED
         await bot.delete_message(call.message.chat.id, call.message.message_id)
         message = await bot.send_message(
@@ -214,6 +230,7 @@ async def join(message: types.ChatJoinRequest):
             user = await crud.user.create(db, data, commit=False)
 
             from src.scripts import create_statistic_for_user
+
             await create_statistic_for_user(user, date.today() - timedelta(days=1))
             await create_statistic_for_user(user, date.today())
 

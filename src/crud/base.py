@@ -2,8 +2,8 @@ from typing import Generic, Type
 from sqlmodel import select
 from sqlmodel.sql.expression import SelectOfScalar
 
-from src.database import AsyncDatabaseSession
-from src.types import ModelType, DataDict
+from src.config.database import AsyncSession
+from src.common.types import ModelType, DataDict
 
 
 class BaseCRUDService(Generic[ModelType]):
@@ -25,27 +25,31 @@ class BaseCRUDService(Generic[ModelType]):
     def base_query(self) -> SelectOfScalar[ModelType]:
         return select(self.model)
 
-    async def get(self, db: AsyncDatabaseSession, id: int) -> ModelType:
+    async def get(self, db: AsyncSession, id: int) -> ModelType:
         result = await db.execute(self.base_query().filter(self.model.id == id))
-        return result.scalars().all()
+        return result.scalars().first()
 
-    async def list(self, db: AsyncDatabaseSession) -> list[ModelType]:
+    async def list(self, db: AsyncSession) -> list[ModelType]:
         result = await db.execute(self.base_query())
         return result.scalars().all()
 
-    async def create(self, db: AsyncDatabaseSession, data: DataDict, commit: bool = True) -> ModelType:
+    async def create(
+        self, db: AsyncSession, data: DataDict, commit: bool = True
+    ) -> ModelType:
         data = await self.before_create(db, data)
         model = await self.perform_create(db, data, commit)
         await self.after_create(db, model)
         return model
 
-    async def before_create(self, db: AsyncDatabaseSession, data: DataDict) -> dict:
+    async def before_create(self, db: AsyncSession, data: DataDict) -> dict:
         return data
 
-    async def after_create(self, db: AsyncDatabaseSession, model: ModelType) -> dict:
+    async def after_create(self, db: AsyncSession, model: ModelType) -> dict:
         pass
 
-    async def perform_create(self, db: AsyncDatabaseSession, data: DataDict, commit: bool = True) -> ModelType:
+    async def perform_create(
+        self, db: AsyncSession, data: DataDict, commit: bool = True
+    ) -> ModelType:
         model = self.model(**data)
         db.add(model)
 

@@ -6,7 +6,7 @@ from aiogram import types, Dispatcher, Bot
 
 from src.scripts import create_statistics
 from src.scheduler import app_rocketry
-from src.database import db
+from config.database import db
 from src.config import settings
 from src.bot import bot, dp
 

@@ -1,5 +1,5 @@
 from rocketry import Rocketry
-from rocketry.conds import every, daily
+from rocketry.conds import daily
 
 from src.config import settings
 from src.scripts import create_statistics, top_solved, clean_left_members
