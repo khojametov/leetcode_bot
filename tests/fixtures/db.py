@@ -23,7 +23,7 @@ def _create_database():
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def db_session(db_engine: AsyncEngine):
+async def db_session(db_engine: AsyncEngine, _create_database):
     async with db_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 

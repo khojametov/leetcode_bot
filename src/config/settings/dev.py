@@ -1,4 +1,4 @@
-from config.settings.base import Settings as BaseSettings
+from src.config.settings.base import Settings as BaseSettings
 
 
 class Settings(BaseSettings):

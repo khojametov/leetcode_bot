@@ -5,10 +5,11 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlmodel import SQLModel
 
 from alembic import context
 
-from config.database import get_db_url
+from src.config.database import get_db_url
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -24,8 +25,6 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from sqlmodel import SQLModel
-
 target_metadata = SQLModel.metadata
 
 
@@ -33,6 +32,7 @@ target_metadata = SQLModel.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+from src.models import *  # noqa
 
 
 def run_migrations_offline() -> None:

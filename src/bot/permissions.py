@@ -9,8 +9,6 @@ class Permissions:
         async def wrapper(message: types.Message, *args, **kwargs):
             if message.chat.type == "private":
                 return await func(message, *args, **kwargs)
-            else:
-                print("It is not a private chat")
 
         return wrapper
 
@@ -21,7 +19,7 @@ class Permissions:
             if message.from_user.username:
                 return await func(message, *args, **kwargs)
             else:
-                await message.reply("Please set a username")
+                await message.reply("Please set your username")
 
         return wrapper
 

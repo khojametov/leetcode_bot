@@ -48,6 +48,6 @@ async def test_get_statistic_by_date_ok(
     db_session: AsyncSession, date_fixture, user: User, statistics: List[Statistic]
 ):
     result = await crud_statistics.get_statistic_by_date(
-        db_session, user_id=user.id, date=date_fixture
+        db_session, user_id=user.id, date_=date_fixture
     )
     assert result == statistics[1]

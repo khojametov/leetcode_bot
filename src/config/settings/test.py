@@ -1,7 +1,10 @@
 class Settings:
     API_TOKEN: str  # leetcode bot token
     GROUP_ID: str  # telegram group id of leetcode group
-    ADMINS_GROUP_ID: str  # telegram group id of admins for accepting join group requests from users
+
+    # telegram group id of admins for accepting join group requests from users
+    ADMINS_GROUP_ID: str
+
     WEBHOOK_HOST: str
     ADMINS: list[str]  # telegram usernames of admins ["@admin1", "@admin2"]
 
@@ -20,4 +23,6 @@ class Settings:
     # Scheduler
     TIME_CREATE_STATISTICS: str  # updating statistics of users
     TIME_TOP_SOLVED: str  # announcing users with most solved problems
-    TIME_CLEAN_LEFT_MEMBERS: str  # deleting info of users who left the group from database
+    TIME_CLEAN_LEFT_MEMBERS: (
+        str
+    )  # deleting info of users who left the group from database

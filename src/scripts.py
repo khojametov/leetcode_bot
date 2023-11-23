@@ -1,14 +1,17 @@
 from datetime import date
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 import src.crud as crud
-from src.config import settings
-from config.database import db
+from src.config.settings import settings
 from src.crawler import get_solved_problems
 from src.models import User
 from src.bot import bot
 
 
-async def create_statistic_for_user(user: User, day: date) -> None:
+async def create_statistic_for_user(
+    db: AsyncSession, user: User, day: date, commit: bool = True
+) -> None:
     easy, medium, hard = await get_solved_problems(user.leetcode_profile)
     statistic = await crud.statistic.get_statistic_by_date(db, user.id, day)
     if statistic:
@@ -23,16 +26,16 @@ async def create_statistic_for_user(user: User, day: date) -> None:
             "hard": hard,
             "date": day,
         }
-        await crud.statistic.create(db, data)
+        await crud.statistic.create(db, data, commit)
 
 
-async def create_statistics() -> None:
+async def create_statistics(db: AsyncSession, commit: bool = True) -> None:
     users = await crud.user.list(db)
     for user in users:
-        await create_statistic_for_user(user, date.today())
+        await create_statistic_for_user(db, user, date.today(), commit)
 
 
-async def top_solved() -> str:
+async def top_solved(db: AsyncSession) -> str:
     users = crud.user.get_with_statistics(db)
 
     solved_for_today = [user.get_solved() for user in users]
@@ -49,7 +52,7 @@ async def top_solved() -> str:
     return message
 
 
-async def clean_left_members() -> None:
+async def clean_left_members(db: AsyncSession) -> None:
     users = crud.user.list(db)
     for user in users:
         try:
@@ -62,5 +65,3 @@ async def clean_left_members() -> None:
         except Exception as e:
             print(e)
             continue
-
-    await db.close()

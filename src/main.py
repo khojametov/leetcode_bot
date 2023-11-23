@@ -4,11 +4,10 @@ import uvicorn
 from fastapi import FastAPI
 from aiogram import types, Dispatcher, Bot
 
-from src.scripts import create_statistics
 from src.scheduler import app_rocketry
-from config.database import db
-from src.config import settings
+from src.config.settings import settings
 from src.bot import bot, dp
+from src.bot import constants
 
 WEBHOOK_PATH = f"/bot/{settings.API_TOKEN}"
 WEBHOOK_URL = f"{settings.WEBHOOK_HOST}{WEBHOOK_PATH}"
@@ -16,19 +15,23 @@ WEBHOOK_URL = f"{settings.WEBHOOK_HOST}{WEBHOOK_PATH}"
 app = FastAPI()
 
 commands = [
-    types.BotCommand(command="/start", description="Start the bot"),
-    types.BotCommand(command="/register", description="Register to the bot"),
-    types.BotCommand(command="/my_profile", description="Your profile info"),
-    types.BotCommand(command="/admins", description="Contact to admins"),
-    types.BotCommand(command="/rating", description="Leetcode group rating"),
+    types.BotCommand(command="/" + constants.START, description="Start the bot"),
+    types.BotCommand(
+        command="/" + constants.REGISTER, description="Register for leetcode group"
+    ),
+    types.BotCommand(
+        command="/" + constants.MY_PROFILE, description="Your profile info"
+    ),
+    types.BotCommand(command="/" + constants.ADMINS, description="Contact to admins"),
+    types.BotCommand(
+        command="/" + constants.RATING, description="Leetcode group rating"
+    ),
 ]
 
 
 @app.on_event("startup")
 async def on_startup():
     webhook_info = await bot.get_webhook_info()
-    await db.init()
-    await create_statistics()
     print(webhook_info.url)
     if webhook_info.url != WEBHOOK_URL:
         await bot.set_webhook(url=WEBHOOK_URL)
@@ -43,9 +46,9 @@ async def on_shutdown():
 
 @app.post(WEBHOOK_PATH)
 async def bot_webhook(updates: dict):
-    telegram_update = types.Update(**updates)
     Dispatcher.set_current(dp)
     Bot.set_current(bot)
+    telegram_update = types.Update(**updates)
     await dp.process_update(telegram_update)
 
 
